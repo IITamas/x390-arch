@@ -1,0 +1,104 @@
+/* Waybar explicit styling */
+* {
+  font-family: "JetBrains Mono", "Noto Sans", monospace;
+  font-size: 12pt;
+  min-height: 0;
+}
+
+window#waybar {
+  background: #FAFAFA;
+  color: #111111;
+  border-bottom: 1px solid #DDDDDD;
+  transition-property: background-color;
+  transition-duration: 0.5s;
+}
+
+#workspaces button {
+  padding: 0 6px;
+  margin: 0 2px;
+  color: #111111;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+#workspaces button.focused {
+  background: #E1F5FE;
+  color: #000000;
+}
+
+#workspaces button:hover {
+  background: #81D4FA;
+  box-shadow: inherit;
+}
+
+#workspaces button.urgent {
+  background-color: #FFCDD2;
+  color: #B71C1C;
+}
+
+#battery {
+  padding: 0 8px;
+  margin: 0 4px;
+}
+
+#battery.warning {
+  color: #E65100;
+  background-color: #FFE0B2;
+}
+
+#battery.critical {
+  color: #B71C1C;
+  background-color: #FFCDD2;
+}
+
+#custom-help {
+  font-weight: bold;
+  margin: 0 8px;
+  color: #0288D1;
+  background-color: #E1F5FE;
+  padding: 0 6px;
+  border-radius: 3px;
+}
+
+#custom-keyboard {
+  font-weight: bold;
+  margin: 0 8px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background-color: #E8EAF6;
+  color: #3949AB;
+}
+
+#bluetooth {
+  color: #2962FF;
+  padding: 0 6px;
+}
+
+#network {
+  color: #00796B;
+  padding: 0 6px;
+}
+
+#clock {
+  font-weight: bold;
+}
+
+#pulseaudio {
+  padding: 0 6px;
+}
+
+#tray {
+  padding: 0 6px;
+  margin-right: 4px;
+}
+
+tooltip {
+  background-color: #FFFFFF;
+  border: 1px solid #BBBBBB;
+  border-radius: 3px;
+}
+
+tooltip label {
+  color: #111111;
+}

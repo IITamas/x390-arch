@@ -1,0 +1,160 @@
+# Sway config - light theme, i3-style keys, US/Hungarian keyboard support
+set $mod Mod4
+set $term alacritty
+set $menu wofi --show drun --prompt="Launch" --insensitive --width=400 --height=400
+set $lock swaylock -f
+
+# Background (light)
+output * bg #ECEFF1 solid_color
+
+# Floating window for help screens and other dialogs
+for_window [app_id="floating"] floating enable, resize set 900 700, border pixel 2
+for_window [title="Network Manager"] floating enable, resize set 800 600
+for_window [app_id="blueman-manager"] floating enable, resize set 800 600
+for_window [app_id="nm-connection-editor"] floating enable
+
+# Font for window titles and bar
+font pango:JetBrains Mono 10
+
+# Input - with US/Hungarian keyboard layouts
+input type:keyboard {
+    repeat_delay 250
+    repeat_rate 35
+    xkb_layout us,hu
+    xkb_options grp:alt_shift_toggle
+} # Keyboard settings
+
+# Touchpad configuration
+input type:touchpad {
+    tap enabled                # Tap to click
+    natural_scroll enabled     # Natural scrolling
+    dwt enabled                # Disable while typing
+    accel_profile adaptive     # Acceleration profile
+    pointer_accel 0.3          # Pointer acceleration
+    scroll_factor 1.0          # Scroll speed
+    middle_emulation enabled   # Middle click emulation
+    tap_button_map lrm         # Left/Right/Middle mapping
+}
+
+# Gesture support for touchpad
+bindgesture swipe:3:right workspace prev # Three finger swipe right for previous workspace
+bindgesture swipe:3:left workspace next  # Three finger swipe left for next workspace
+bindgesture swipe:3:up layout toggle split # Three finger swipe up to toggle split layout
+bindgesture swipe:3:down exec $menu     # Three finger swipe down for app menu
+bindgesture pinch:2:inward exec $lock   # Two finger pinch in to lock screen
+bindgesture pinch:4:outward exec $menu  # Four finger pinch out for app menu
+
+# Launchers
+bindsym $mod+Return exec $term # Open terminal
+bindsym $mod+d exec $menu      # Open application menu
+bindsym $mod+Shift+q kill      # Close focused window
+bindsym $mod+Shift+e exec swaynag -t warning -m 'Do you really want to exit sway?' -B 'Yes' 'swaymsg exit' # Confirm exit
+bindsym $mod+Shift+x exec $lock # Lock screen
+
+# Quick access to network, monitors, and help
+bindsym $mod+m exec ~/.config/sway/scripts/monitor-manager.sh # Monitor management
+bindsym $mod+n exec ~/.config/sway/scripts/network-manager.sh # Network management
+bindsym $mod+question exec ~/.config/sway/scripts/show-help.sh # Show keybinding help
+bindsym $mod+Alt+b exec blueman-manager # Bluetooth manager
+
+# Keyboard layout toggle - Alt+Shift is configured automatically
+# This is an additional keybinding for manual toggle with notification
+bindsym $mod+Alt+k exec ~/.config/sway/scripts/toggle-keyboard.sh # Toggle keyboard layout
+
+# Focus/move
+bindsym $mod+h focus left      # Focus window to the left
+bindsym $mod+j focus down      # Focus window below
+bindsym $mod+k focus up        # Focus window above
+bindsym $mod+l focus right     # Focus window to the right
+bindsym $mod+Shift+h move left # Move window left
+bindsym $mod+Shift+j move down # Move window down
+bindsym $mod+Shift+k move up   # Move window up
+bindsym $mod+Shift+l move right # Move window right
+bindsym $mod+v splith         # Split horizontally
+bindsym $mod+b splitv         # Split vertically
+bindsym $mod+f fullscreen toggle # Toggle fullscreen
+
+# Layout
+bindsym $mod+s layout stacking # Stacking layout
+bindsym $mod+w layout tabbed   # Tabbed layout
+bindsym $mod+e layout toggle split # Toggle split layout
+bindsym $mod+Shift+space floating toggle # Toggle floating mode
+bindsym $mod+space focus mode_toggle # Toggle focus between tiling/floating
+
+# Resizing
+mode "resize" {
+    bindsym h resize shrink width 10 px
+    bindsym j resize grow height 10 px
+    bindsym k resize shrink height 10 px
+    bindsym l resize grow width 10 px
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+r mode "resize" # Enter resize mode
+
+# Workspaces
+set $ws1 "1:term"
+set $ws2 "2:web"
+set $ws3 "3:code"
+bindsym $mod+1 workspace $ws1  # Switch to workspace 1
+bindsym $mod+2 workspace $ws2  # Switch to workspace 2
+bindsym $mod+3 workspace $ws3  # Switch to workspace 3
+bindsym $mod+Shift+1 move container to workspace $ws1 # Move window to workspace 1
+bindsym $mod+Shift+2 move container to workspace $ws2 # Move window to workspace 2
+bindsym $mod+Shift+3 move container to workspace $ws3 # Move window to workspace 3
+
+# Assign Firefox to web
+for_window [app_id="firefox"] move to workspace $ws2
+assign [app_id="firefox"] $ws2
+
+# Assign VSCodium to code
+for_window [app_id="codium"] move to workspace $ws3
+assign [app_id="codium"] $ws3
+
+# Volume/brightness
+bindsym XF86AudioRaiseVolume exec 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+' # Increase volume
+bindsym XF86AudioLowerVolume exec 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-' # Decrease volume
+bindsym XF86AudioMute exec 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle' # Toggle mute
+bindsym XF86MonBrightnessUp exec 'brightnessctl s +5%' # Increase brightness
+bindsym XF86MonBrightnessDown exec 'brightnessctl s 5%-' # Decrease brightness
+bindsym XF86AudioMicMute exec 'wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle' # Toggle microphone mute
+
+# Clipboard
+exec_always cliphist wipe
+bindsym $mod+c exec "cliphist list | wofi --dmenu | cliphist decode | wl-copy" # Show clipboard history
+
+# Status bar (see separate waybar config)
+bar {
+  position top
+  status_command waybar
+  font pango:JetBrains Mono 10
+  separator_symbol " | "
+  colors {
+    background #FAFAFA
+    statusline #000000
+    separator  #666666
+    focused_workspace  #4c7899 #285577 #ffffff
+    active_workspace   #333333 #5f676a #ffffff
+    inactive_workspace #333333 #222222 #888888
+    urgent_workspace   #2f343a #900000 #ffffff
+  }
+}
+
+# Idle configuration
+exec swayidle -w \
+    timeout 300 '$lock' \
+    timeout 600 'swaymsg "output * dpms off"' \
+    resume 'swaymsg "output * dpms on"' \
+    before-sleep '$lock' \
+    lock '$lock' \
+    after-resume 'swaymsg "output * dpms on"'
+
+# Handle lid switch
+bindswitch --reload --locked lid:on exec $lock
+
+# Autostart
+exec mako # Notifications
+exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.3 # Set initial volume to 30%
+exec blueman-applet # Bluetooth applet
+# Auto-detect monitors
+exec ~/.config/sway/scripts/monitor-manager.sh

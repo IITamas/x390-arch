@@ -1,0 +1,63 @@
+{
+  "workbench.colorTheme": "Default Light Modern",
+  "workbench.sideBar.location": "right",
+  "workbench.secondarySideBar.visible": false,
+  "workbench.startupEditor": "none",
+  "workbench.list.smoothScrolling": true,
+  "workbench.editor.enablePreview": false,
+
+  "zenMode.centerLayout": false,
+  "zenMode.hideLineNumbers": false,
+  "zenMode.hideStatusBar": false,
+  "zenMode.hideActivityBar": false,
+  "zenMode.fullScreen": false,
+
+  "window.titleBarStyle": "custom",
+  "window.customTitleBarVisibility": "windowed",
+  "window.menuBarVisibility": "toggle",
+  "window.zoomLevel": 0,
+  
+  "editor.fontFamily": "'JetBrains Mono', 'monospace'",
+  "editor.fontSize": 14,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  "editor.renderWhitespace": "boundary",
+  "editor.cursorStyle": "line",
+  "editor.cursorBlinking": "blink",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+
+  "keyboard.dispatch": "keyCode",
+
+  "update.mode": "manual",
+  "update.showReleaseNotes": false,
+
+  "telemetry.telemetryLevel": "off",
+  "telemetry.enableCrashReporter": false,
+  "telemetry.enableTelemetry": false,
+
+  "git.enabled": true,
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.blame.editorDecoration.enabled": true,
+
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.eol": "\n",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/*.o": true,
+    "**/*.pyc": true
+  },
+
+  "diffEditor.ignoreTrimWhitespace": false,
+  "scm.diffDecorations": "overview",
+
+  "breadcrumbs.enabled": false,
+  "editor.glyphMargin": false,
+  "editor.lineNumbers": "on",
+  "editor.minimap.enabled": false
+}
