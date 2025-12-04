@@ -1,43 +1,22 @@
 #!/usr/bin/env bash
-# Sway configuration with US-Hungarian keyboard switching
-
-# Load helper functions
+set -euo pipefail
+# shellcheck disable=SC1091
 source ./helpers.sh
-
-# Setup user variables
 setup_user_vars
 
-# Create Sway directories and scripts
 SWAY_DIR="$USER_HOME/.config/sway"
 SCRIPT_DIR="$SWAY_DIR/scripts"
 
-ensure_dir "$SWAY_DIR" "$USER_NAME:$USER_NAME"
-ensure_dir "$SCRIPT_DIR" "$USER_NAME:$USER_NAME"
-ensure_dir "$SWAY_DIR/help" "$USER_NAME:$USER_NAME"
+mkdir -p "$SWAY_DIR" "$SCRIPT_DIR" "$SWAY_DIR/help"
 
-# Copy Sway config file
-backup_file "$SWAY_DIR/config"
-cp ./config/sway-config "$SWAY_DIR/config"
+install_file ./config/sway-config "$SWAY_DIR/config" 644 || true
+install_file ./config/generate-help.sh "$SCRIPT_DIR/generate-help.sh" 755 || true
+install_file ./config/show-help.sh "$SCRIPT_DIR/show-help.sh" 755 || true
+install_file ./config/monitor-manager.sh "$SCRIPT_DIR/monitor-manager.sh" 755 || true
+install_file ./config/network-manager.sh "$SCRIPT_DIR/network-manager.sh" 755 || true
+install_file ./config/toggle-keyboard.sh "$SCRIPT_DIR/toggle-keyboard.sh" 755 || true
 
-# Copy and set up scripts
-cp ./config/generate-help.sh "$SCRIPT_DIR/generate-help.sh"
-chmod +x "$SCRIPT_DIR/generate-help.sh"
-
-cp ./config/show-help.sh "$SCRIPT_DIR/show-help.sh"
-chmod +x "$SCRIPT_DIR/show-help.sh"
-
-cp ./config/monitor-manager.sh "$SCRIPT_DIR/monitor-manager.sh"
-chmod +x "$SCRIPT_DIR/monitor-manager.sh"
-
-cp ./config/network-manager.sh "$SCRIPT_DIR/network-manager.sh"
-chmod +x "$SCRIPT_DIR/network-manager.sh"
-
-cp ./config/toggle-keyboard.sh "$SCRIPT_DIR/toggle-keyboard.sh"
-chmod +x "$SCRIPT_DIR/toggle-keyboard.sh"
-
-# Generate the initial keybinding help
-"$SCRIPT_DIR/generate-help.sh"
-
-chown -R "$USER_NAME:$USER_NAME" "$SWAY_DIR"
+"$SCRIPT_DIR/generate-help.sh" || true
+sudo chown -R "$USER_NAME:$USER_NAME" "$SWAY_DIR" || true
 
 echo "Sway configuration with keyboard layout support complete."

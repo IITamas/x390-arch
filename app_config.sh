@@ -1,58 +1,38 @@
 #!/usr/bin/env bash
-# Application configurations
-
-# Load helper functions
+set -euo pipefail
+# shellcheck disable=SC1091
 source ./helpers.sh
-
-# Setup user variables
 setup_user_vars
 
-# Alacritty config
-echo "Configuring Alacritty..."
-ALAC_DIR="$USER_HOME/.config/alacritty"
-ensure_dir "$ALAC_DIR" "$USER_NAME:$USER_NAME"
-backup_file "$ALAC_DIR/alacritty.toml"
-cp ./config/alacritty.toml "$ALAC_DIR/alacritty.toml"
+# Alacritty
+install_file ./config/alacritty.toml "$USER_HOME/.config/alacritty/alacritty.toml" 644 || true
 
-# Swaylock config
-echo "Configuring swaylock..."
-LOCK_DIR="$USER_HOME/.config/swaylock"
-ensure_dir "$LOCK_DIR" "$USER_NAME:$USER_NAME"
-cp ./config/swaylock.conf "$LOCK_DIR/config"
+# Swaylock
+install_file ./config/swaylock.conf "$USER_HOME/.config/swaylock/config" 644 || true
 
-# Mako notifications config
-echo "Configuring mako..."
-MAKO_DIR="$USER_HOME/.config/mako"
-ensure_dir "$MAKO_DIR" "$USER_NAME:$USER_NAME"
-cp ./config/mako.conf "$MAKO_DIR/config"
+# Mako
+install_file ./config/mako.conf "$USER_HOME/.config/mako/config" 644 || true
 
 # VSCodium settings
-echo "Configuring VSCodium..."
-VS_DIR="$USER_HOME/.config/VSCodium/User"
-ensure_dir "$VS_DIR" "$USER_NAME:$USER_NAME"
-backup_file "$VS_DIR/settings.json"
-cp ./config/codium-settings.json "$VS_DIR/settings.json"
+install_file ./config/codium-settings.json "$USER_HOME/.config/VSCodium/User/settings.json" 644 || true
 
-# Firefox VA-API settings
-echo "Configuring Firefox for hardware video acceleration..."
+# Firefox VA-API prefs (append once)
 FF_DIR="$USER_HOME/.mozilla/firefox"
 if [[ -d "$FF_DIR" ]]; then
   for profile in "$FF_DIR"/*.default-release; do
-    if [[ -d "$profile" ]]; then
-      PREFS="$profile/user.js"
-      
-      # Only add settings if the file doesn't exist or doesn't already have the settings
-      if [[ ! -f "$PREFS" ]] || ! grep -q "media.ffmpeg.vaapi.enabled" "$PREFS"; then
-        echo "Writing Firefox hardware acceleration settings to $PREFS"
-        cat ./config/firefox-user.js >> "$PREFS"
-        chown "$USER_NAME:$USER_NAME" "$PREFS"
-      else
-        echo "Firefox hardware acceleration settings already configured."
-      fi
+    [[ -d "$profile" ]] || continue
+    PREFS="$profile/user.js"
+    if [[ ! -f "$PREFS" ]] || ! grep -q "media.ffmpeg.vaapi.enabled" "$PREFS"; then
+      cat ./config/firefox-user.js >> "$PREFS"
+      sudo chown "$USER_NAME:$USER_NAME" "$PREFS" || true
+      echo "Wrote Firefox VA-API prefs to $PREFS"
+    else
+      echo "Firefox VA-API prefs already present in $PREFS"
     fi
   done
 else
   echo "Firefox profile directory not found. Settings will be applied when Firefox is first launched."
 fi
 
+sudo chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/.config" || true
 echo "Application configurations complete."

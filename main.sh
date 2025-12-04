@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# ThinkPad X390 Setup - Main script with strict testing and fail-fast
-# This script orchestrates all modules in the correct order
-
 set -euo pipefail
 
 echo "==============================================="
@@ -13,84 +10,70 @@ echo "- Alacritty + Firefox + VSCodium"
 echo "- Balanced power profile, caps2esc"
 echo
 
-# Preconditions
+# Not root
 if [[ $EUID -eq 0 ]]; then
-  echo "Error: Do not run as root. Use a regular user with sudo."
+  echo "Error: Do not run this script with sudo or as root."
   exit 1
 fi
 
-if ! sudo -v &>/dev/null; then
-  echo "Error: You need sudo privileges to run this script."
+# sudo works
+if ! command -v sudo >/dev/null 2>&1; then
+  echo "Error: sudo not found. Install sudo and add your user to wheel."
   exit 1
 fi
+sudo -v >/dev/null || { echo "Error: sudo verification failed."; exit 1; }
 
-if [[ ! -d "./config" ]]; then
-  echo "Error: Config directory not found. Expected ./config"
-  exit 1
-fi
+# Executables
+chmod +x helpers.sh system_setup.sh hardware_setup.sh desktop_setup.sh \
+  sway_config.sh waybar_config.sh app_config.sh state.sh test.sh 2>/dev/null || true
+find ./config -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 
-# Ensure scripts are executable before tests
-chmod +x helpers.sh || true
-chmod +x system_setup.sh || true
-chmod +x hardware_setup.sh || true
-chmod +x desktop_setup.sh || true
-chmod +x sway_config.sh || true
-chmod +x waybar_config.sh || true
-chmod +x app_config.sh || true
-chmod +x state.sh || true
-chmod +x test.sh || true
-find ./config -name "*.sh" -exec chmod +x {} \; || true
+# Optional state init
+[[ -f ./state.sh ]] && [[ ! -d ./.state ]] && ./state.sh || true
 
-# Initialize state tracking if not present
-if [[ ! -d ./.state ]]; then
-  ./state.sh
-fi
-
-# Strict preflight tests: exit immediately on failure
+# Tests first
 echo "Running configuration tests..."
 ./test.sh all
 echo "All tests passed."
 
-# Confirm proceed
 read -rp "Proceed with installation and configuration? [y/N]: " ans
-if [[ ! "${ans:-}" =~ ^[Yy]$ ]]; then
-  echo "Installation cancelled."
-  exit 0
-fi
+[[ "${ans:-}" =~ ^[Yy]$ ]] || { echo "Installation cancelled."; exit 0; }
 
-# Run modules (fail-fast)
 echo "Running system setup..."
-./system_setup.sh
+if ! ./system_setup.sh; then
+  echo "Error: system_setup.sh failed. Aborting."
+  exit 1
+fi
 
 echo "Running hardware setup..."
-./hardware_setup.sh
+if ! ./hardware_setup.sh; then
+  echo "Error: hardware_setup.sh failed. Aborting."
+  exit 1
+fi
 
 echo "Running desktop environment setup..."
-./desktop_setup.sh
+if ! ./desktop_setup.sh; then
+  echo "Error: desktop_setup.sh failed. Aborting."
+  exit 1
+fi
 
 echo "Configuring Sway window manager..."
-./sway_config.sh
+if ! ./sway_config.sh; then
+  echo "Error: sway_config.sh failed. Aborting."
+  exit 1
+fi
 
 echo "Configuring Waybar..."
-./waybar_config.sh
+if ! ./waybar_config.sh; then
+  echo "Error: waybar_config.sh failed. Aborting."
+  exit 1
+fi
 
 echo "Configuring applications..."
-./app_config.sh
+if ! ./app_config.sh; then
+  echo "Error: app_config.sh failed. Aborting."
+  exit 1
+fi
 
 echo "==============================================="
-echo "✅ Setup complete!"
-echo
-echo "- Light theme across Sway/Waybar/Alacritty"
-echo "- Keyboard: US/HU (Alt+Shift), toggle: Win+Alt+k"
-echo "- Alacritty, Firefox (VA-API), VSCodium configured"
-echo "- Balanced power profile, caps2esc enabled"
-echo
-echo "Idempotent: re-running applies only changed configs."
-echo
-
-read -rp "Reboot now to apply all changes? [y/N]: " reboot_ans
-if [[ "${reboot_ans:-}" =~ ^[Yy]$ ]]; then
-  sudo reboot
-else
-  echo "You can reboot manually when ready."
-fi
+echo "✅ Setup complete! Reboot recommended."

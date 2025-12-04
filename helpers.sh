@@ -35,19 +35,21 @@ setup_user_vars() {
 }
 
 check_root() {
-  if [[ $EUID -ne 0 ]] && [[ -z "${SUDO_USER:-}" ]]; then
-    echo "Error: This script needs to be run as a regular user with sudo privileges."
-    ERRORS_OCCURRED=true
-    return 1
-  fi
   return 0
 }
 
 backup_file() {
   local file="$1"
+  local use_sudo="${2:-}" 
+  
   if [[ -f "$file" ]]; then
     local backup="${file}.bak.$(date +%s)"
-    cp "$file" "$backup"
+
+    if [[ "$use_sudo" == "sudo" ]] then
+        sudo cp "$file" "$backup"
+    else
+        cp "$file" "$backup"
+    fi
     echo "Created backup: $backup"
     return 0
   fi
@@ -104,23 +106,25 @@ install_package() {
 }
 
 enable_service() {
-  local service="$1"
-  if systemctl list-unit-files "$service" &>/dev/null; then
-    if ! systemctl is-enabled --quiet "$service"; then
-      echo "Enabling $service..."
-      if ! sudo systemctl enable "$service"; then
-        echo "Error: Failed to enable $service"
-        ERRORS_OCCURRED=true
-        return 1
-      fi
+  local unit="$1"
+  # If no suffix provided, try appending .service
+  if [[ "$unit" != *.service && "$unit" != *.timer && "$unit" != *.socket && "$unit" != *.target ]]; then
+    if systemctl list-unit-files "${unit}.service" >/dev/null 2>&1; then
+      unit="${unit}.service"
+    fi
+  fi
+
+  if systemctl list-unit-files "$unit" >/dev/null 2>&1; then
+    if ! systemctl is-enabled --quiet "$unit"; then
+      sudo systemctl enable "$unit"
+      echo "Enabled: $unit"
     else
-      echo "$service is already enabled."
+      echo "Already enabled: $unit"
     fi
   else
-    echo "Service $service not found, skipping."
+    echo "Unit not found: $unit (skipping)"
     return 1
   fi
-  return 0
 }
 
 # Enhanced function to copy a config file with proper error handling and idempotency
@@ -210,4 +214,179 @@ report_errors() {
     echo "✅ All operations completed successfully."
     return 0
   fi
+}
+
+# Install/copy a file if content differs; optional sudo, sets mode
+# Usage: install_file SRC DEST [MODE] [sudo]
+install_file() {
+  local src="$1" dest="$2" mode="${3:-644}" use_sudo="${4:-}"
+  [[ -f "$src" ]] || { echo "Error: missing $src"; return 1; }
+
+  # If target exists and is identical, skip
+  if [[ -f "$dest" ]] && diff -q "$src" "$dest" >/dev/null 2>&1; then
+    echo "Up-to-date: $dest"
+    return 0
+  fi
+
+  local dir; dir="$(dirname "$dest")"
+  if [[ "$use_sudo" == "sudo" ]]; then
+    sudo mkdir -p "$dir"
+    backup_file "$dest" sudo || true
+    sudo install -m "$mode" "$src" "$dest"
+  else#!/usr/bin/env bash
+set -euo pipefail
+
+# Optional state tracking
+if [[ -f ./state.sh ]]; then
+  # shellcheck disable=SC1091
+  source ./state.sh
+fi
+
+confirm() {
+  read -rp "$1 [y/N]: " ans
+  [[ "${ans:-}" =~ ^[Yy]$ ]]
+}
+
+setup_user_vars() {
+  USER_NAME="${SUDO_USER:-$USER}"
+  USER_HOME="$(getent passwd "$USER_NAME" | cut -d: -f6)"
+  if [[ -z "${USER_HOME:-}" ]]; then
+    echo "Error: Could not determine home for $USER_NAME"
+    exit 1
+  fi
+}
+
+# Backup a file with optional sudo
+# Usage: backup_file /etc/file sudo
+backup_file() {
+  local file="$1"
+  local use_sudo="${2:-}" # "sudo" or empty
+  local ts; ts="$(date +%s)"
+  local dest="${file}.bak.${ts}"
+
+  if [[ "$use_sudo" == "sudo" ]]; then
+    if sudo test -f "$file"; then
+      sudo install -m 600 "$file" "$dest" 2>/dev/null || sudo cp "$file" "$dest"
+      echo "Created backup: $dest"
+      return 0
+    fi
+  else
+    if [[ -f "$file" ]]; then
+      install -m 600 "$file" "$dest" 2>/dev/null || cp "$file" "$dest"
+      echo "Created backup: $dest"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+# Install a file if content differs; optional sudo, sets mode
+# Usage: install_file SRC DEST [MODE] [sudo]
+install_file() {
+  local src="$1" dest="$2" mode="${3:-644}" use_sudo="${4:-}"
+  [[ -f "$src" ]] || { echo "Error: missing $src"; return 1; }
+
+  if [[ -f "$dest" ]] && diff -q "$src" "$dest" >/dev/null 2>&1; then
+    echo "Up-to-date: $dest"
+    return 0
+  fi
+
+  local dir; dir="$(dirname "$dest")"
+  if [[ "$use_sudo" == "sudo" ]]; then
+    sudo mkdir -p "$dir"
+    backup_file "$dest" sudo || true
+    sudo install -m "$mode" "$src" "$dest"
+  else
+    mkdir -p "$dir"
+    backup_file "$dest" || true
+    install -m "$mode" "$src" "$dest"
+  fi
+  echo "Installed: $dest"
+  return 0
+}
+
+# Write stdin to destination atomically; optional sudo
+# Usage: echo "..." | write_file /etc/file sudo 644
+write_file() {
+  local dest="$1" use_sudo="${2:-}" mode="${3:-644}"
+  local dir; dir="$(dirname "$dest")"
+  local tmp; tmp="$(mktemp)"
+  cat >"$tmp"
+  if [[ "$use_sudo" == "sudo" ]]; then
+    sudo mkdir -p "$dir"
+    backup_file "$dest" sudo || true
+    sudo install -m "$mode" "$tmp" "$dest"
+  else
+    mkdir -p "$dir"
+    backup_file "$dest" || true
+    install -m "$mode" "$tmp" "$dest"
+  fi
+  rm -f "$tmp"
+  echo "Wrote: $dest"
+}
+
+# Enable a service; tolerate missing units; accept raw name or unit with suffix
+enable_service() {
+  local unit="$1"
+  if [[ "$unit" != *.service && "$unit" != *.timer && "$unit" != *.socket && "$unit" != *.target ]]; then
+    if systemctl list-unit-files "${unit}.service" >/dev/null 2>&1; then
+      unit="${unit}.service"
+    fi
+  fi
+
+  if systemctl list-unit-files "$unit" >/dev/null 2>&1; then
+    if ! systemctl is-enabled --quiet "$unit"; then
+      sudo systemctl enable "$unit"
+      echo "Already enabled: $unit" | sed 's/Already/Enabled/'
+    else
+      echo "Already enabled: $unit"
+    fi
+  else
+    echo "Unit not found: $unit (skipping)"
+    return 1
+  fi
+}
+
+# Install a package if available
+install_package() {
+  local pkg="$1"
+  if pacman -Q "$pkg" >/dev/null 2>&1; then
+    echo "$pkg is already installed."
+    return 0
+  fi
+  if pacman -Si "$pkg" >/dev/null 2>&1; then
+    sudo pacman -S --needed --noconfirm "$pkg"
+    echo "$pkg installed."
+    return 0
+  else
+    echo "Package $pkg not found in repositories."
+    return 1
+  fi
+}
+    mkdir -p "$dir"
+    backup_file "$dest" || true
+    install -m "$mode" "$src" "$dest"
+  fi
+  echo "Installed: $dest"
+  return 0
+}
+
+# Write stdin to a destination file atomically; optional sudo
+# Usage: echo "text" | write_file /etc/foo.conf sudo 644
+write_file() {
+  local dest="$1" use_sudo="${2:-}" mode="${3:-644}"
+  local dir; dir="$(dirname "$dest")"
+  local tmp; tmp="$(mktemp)"
+  cat >"$tmp"
+  if [[ "$use_sudo" == "sudo" ]]; then
+    sudo mkdir -p "$dir"
+    backup_file "$dest" sudo || true
+    sudo install -m "$mode" "$tmp" "$dest"
+  else
+    mkdir -p "$dir"
+    backup_file "$dest" || true
+    install -m "$mode" "$tmp" "$dest"
+  fi
+  rm -f "$tmp"
+  echo "Wrote: $dest"
 }
