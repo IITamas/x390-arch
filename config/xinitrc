@@ -1,0 +1,9 @@
+#!/bin/bash
+# Load X resources
+[[ -f ~/.Xresources ]] && xrdb -merge -I$HOME ~/.Xresources
+
+# Source xprofile if it exists
+[[ -f ~/.xprofile ]] && . ~/.xprofile
+
+# Start i3
+exec i3

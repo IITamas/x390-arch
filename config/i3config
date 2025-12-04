@@ -1,0 +1,116 @@
+# ThinkPad X390 i3 config
+
+# Mod key (Mod4 is Windows key, Mod1 is Alt)
+set $mod Mod4
+
+# Font
+font pango:monospace 9
+
+# Start XDG autostart
+exec --no-startup-id dex --autostart --environment i3
+
+# Network manager applet
+exec --no-startup-id nm-applet
+
+# Language indicator in status bar
+exec --no-startup-id "while true; do xkb-switch > /tmp/xkb-layout; sleep 0.5; done"
+
+# Set wallpaper
+exec --no-startup-id feh --bg-fill ~/Pictures/wallpaper.jpg
+
+# Use Mouse+$mod to drag floating windows
+floating_modifier $mod
+
+# Start terminal
+bindsym $mod+Return exec alacritty
+
+# Kill focused window
+bindsym $mod+Shift+q kill
+
+# Start dmenu
+bindsym $mod+d exec --no-startup-id dmenu_run
+
+# Change focus
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# Move focused window
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+# Split horizontally/vertically
+bindsym $mod+b split h
+bindsym $mod+v split v
+
+# Enter fullscreen
+bindsym $mod+f fullscreen toggle
+
+# Layout modes
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# Toggle tiling/floating
+bindsym $mod+Shift+space floating toggle
+
+# Change focus between tiling/floating windows
+bindsym $mod+space focus mode_toggle
+
+# Focus parent container
+bindsym $mod+a focus parent
+
+# Workspaces
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+# Switch to workspace
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+5 workspace number $ws5
+bindsym $mod+6 workspace number $ws6
+bindsym $mod+7 workspace number $ws7
+bindsym $mod+8 workspace number $ws8
+bindsym $mod+9 workspace number $ws9
+bindsym $mod+0 workspace number $ws10
+
+# Move focused container to workspace
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+bindsym $mod+Shift+5 move container to workspace number $ws5
+bindsym $mod+Shift+6 move container to workspace number $ws6
+bindsym $mod+Shift+7 move container to workspace number $ws7
+bindsym $mod+Shift+8 move container to workspace number $ws8
+bindsym $mod+Shift+9 move container to workspace number $ws9
+bindsym $mod+Shift+0 move container to workspace number $ws10
+
+# Reload/restart/exit i3
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3?' -B 'Yes' 'i3-msg exit'"
+
+# Screenshot (Print Screen)
+bindsym Print exec --no-startup-id maim -s | xclip -selection clipboard -t image/png
+
+# Lock screen
+bindsym $mod+Shift+x exec --no-startup-id $HOME/.local/bin/lock.sh
+
+# i3status
+bar {
+    status_command i3status
+}
